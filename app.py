@@ -42,46 +42,47 @@ def generate_short_code():
         segments.append(segment)
     return '-'.join(segments)
 
-# Check if user has access
-def has_access():
-    # Check if user is logged in
-    if 'logged_in' in session:
-        return True
-    
+# Check if user has access to see the login page
+def has_site_access():
     # Check for access token in URL parameter
     access_token = request.args.get('token')
     if access_token == ACCESS_TOKEN:
-        session['access_granted'] = True
+        session['site_access'] = True
         return True
     
     # Check for access token in session
-    if session.get('access_granted'):
+    if session.get('site_access'):
         return True
     
     return False
 
-# Access required decorator
-def access_required(f):
+# Check if user is logged in as admin
+def is_logged_in():
+    return 'logged_in' in session
+
+# Site access required decorator (for login page and general site access)
+def site_access_required(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not has_access():
+        if not has_site_access():
             return "Site Not Found", 404
         return f(*args, **kwargs)
     return decorated_function
 
-# Login required decorator
+# Login required decorator (for admin dashboard and functions)
 def login_required(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'logged_in' not in session:
+        if not is_logged_in():
+            flash('Please login to access the dashboard', 'error')
             return redirect('/login')
         return f(*args, **kwargs)
     return decorated_function
 
 @app.route('/')
-@access_required
+@login_required
 def index():
     conn = get_db_connection()
     c = conn.cursor()
@@ -109,14 +110,14 @@ def index():
 def grant_access():
     token = request.args.get('token')
     if token == ACCESS_TOKEN:
-        session['access_granted'] = True
-        flash('Access granted!', 'success')
-        return redirect('/')
+        session['site_access'] = True
+        flash('Site access granted! Please login to continue.', 'success')
+        return redirect('/login')
     else:
         return "Site Not Found", 404
 
 @app.route('/login', methods=['GET', 'POST'])
-@access_required
+@site_access_required
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -139,7 +140,7 @@ def logout():
     return redirect('/login')
 
 @app.route('/shorten', methods=['POST'])
-@access_required
+@login_required
 def shorten_url():
     original_url = request.form.get('url')
     
@@ -173,7 +174,7 @@ def shorten_url():
     return redirect('/')
 
 @app.route('/toggle_url/<int:url_id>')
-@access_required
+@login_required
 def toggle_url(url_id):
     conn = get_db_connection()
     c = conn.cursor()
@@ -192,7 +193,7 @@ def toggle_url(url_id):
     return redirect('/')
 
 @app.route('/delete_url/<int:url_id>')
-@access_required
+@login_required
 def delete_url(url_id):
     conn = get_db_connection()
     c = conn.cursor()
@@ -206,7 +207,7 @@ def delete_url(url_id):
 
 @app.route('/<short_code>')
 def redirect_to_url(short_code):
-    # Allow URL redirects without access check (public functionality)
+    # Allow URL redirects without any access check (public functionality)
     conn = get_db_connection()
     c = conn.cursor()
     
@@ -230,8 +231,6 @@ def redirect_to_url(short_code):
 # Catch all other routes and show "Site Not Found"
 @app.route('/<path:path>')
 def catch_all(path):
-    if not has_access():
-        return "Site Not Found", 404
     return "Site Not Found", 404
 
 if __name__ == '__main__':
