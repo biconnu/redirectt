@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberLink - URL Redirect</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #ffffff;
+            color: #000000;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: #000000;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info span {
+            color: #ffffff;
+            font-size: 0.9rem;
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-logout:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #000000;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #666666;
+            font-size: 1.1rem;
+        }
+
+        .shorten-form {
+            background: #f9f9f9;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 3rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333333;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+
+        .url-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .url-input-group input {
+            flex: 1;
+            padding: 12px 16px;
+            background: #ffffff;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            color: #000000;
+        }
+
+        .url-input-group input:focus {
+            outline: none;
+            border-color: #000000;
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .url-input-group input::placeholder {
+            color: #999999;
+        }
+
+        .btn-shorten {
+            padding: 12px 30px;
+            background: #000000;
+            color: #ffffff;
+            border: 1px solid #000000;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-shorten:hover {
+            background: #333333;
+            border-color: #333333;
+        }
+
+        .urls-table {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: #f5f5f5;
+            color: #000000;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .table-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f9f9f9;
+            font-weight: 600;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .short-url {
+            font-family: monospace;
+            background: #f5f5f5;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #000000;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .short-url:hover {
+            background: #e0e0e0;
+        }
+
+        .original-url {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #666666;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: #f0f0f0;
+            color: #000000;
+            border: 1px solid #cccccc;
+        }
+
+        .status-inactive {
+            background: #f5f5f5;
+            color: #666666;
+            border: 1px solid #e0e0e0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-toggle {
+            background: #f0f0f0;
+            color: #000000;
+            border: 1px solid #cccccc;
+        }
+
+        .btn-toggle:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-delete {
+            background: #f5f5f5;
+            color: #666666;
+            border: 1px solid #e0e0e0;
+        }
+
+        .btn-delete:hover {
+            background: #e0e0e0;
+            color: #000000;
+        }
+
+        .clicks-count {
+            text-align: center;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .flash-messages {
+            margin-bottom: 2rem;
+        }
+
+        .flash {
+            padding: 1rem 1.5rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            border-left: 4px solid;
+            background: #f9f9f9;
+        }
+
+        .flash.success {
+            color: #000000;
+            border-color: #000000;
+        }
+
+        .flash.error {
+            color: #666666;
+            border-color: #666666;
+        }
+
+        .no-urls {
+            text-align: center;
+            padding: 3rem;
+            color: #999999;
+        }
+
+        .no-urls i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #cccccc;
+        }
+
+        .no-urls h3 {
+            color: #666666;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .url-input-group {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="navbar-brand">
+            <i class="fas fa-link"></i>
+            <span>CyberLink</span>
+        </a>
+        <div class="user-info">
+            <span>USER: {{ session.username }}</span>
+            <a href="/logout" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i> LOGOUT
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="header">
+            <h1>REDIRECT YOUR URLS</h1>
+            <p>Create short links and track their performance</p>
+        </div>
+
+        <div class="shorten-form">
+            <form method="POST" action="/shorten">
+                <div class="form-group">
+                    <label for="url">ENTER URL TO REDIRECT:</label>
+                    <div class="url-input-group">
+                        <input type="url" id="url" name="url" placeholder="https://example.com/" required>
+                        <button type="submit" class="btn-shorten">
+                            <i class="fas fa-compress-alt"></i> REDIRECT
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="urls-table">
+            <div class="table-header">
+                <h2><i class="fas fa-database"></i> YOUR REDIRECT URLS</h2>
+            </div>
+            
+            {% if urls %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>REDIRECT URL</th>
+                        <th>ORIGINAL URL</th>
+                        <th>CLICKS</th>
+                        <th>STATUS</th>
+                        <th>CREATED</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for url in urls %}
+                    <tr>
+                        <td>
+                            <a href="{{ request.host_url }}{{ url[2] }}" target="_blank" class="short-url">
+                                {{ request.host_url }}{{ url[2] }}
+                            </a>
+                        </td>
+                        <td class="original-url" title="{{ url[1] }}">{{ url[1] }}</td>
+                        <td class="clicks-count">{{ url[4] }}</td>
+                        <td>
+                            <span class="status-badge {% if url[5] %}status-active{% else %}status-inactive{% endif %}">
+                                {% if url[5] %}ACTIVE{% else %}DISABLED{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ url[3][:10] }}</td>
+                        <td class="action-buttons">
+                            <a href="/toggle_url/{{ url[0] }}" class="btn-action btn-toggle">
+                                {% if url[5] %}
+                                    <i class="fas fa-pause"></i> DISABLE
+                                {% else %}
+                                    <i class="fas fa-play"></i> ENABLE
+                                {% endif %}
+                            </a>
+                            <a href="/delete_url/{{ url[0] }}" class="btn-action btn-delete" onclick="return confirm('CONFIRM DELETION?')">
+                                <i class="fas fa-trash"></i> DELETE
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-urls">
+                <i class="fas fa-link"></i>
+                <h3>NO URLS DETECTED</h3>
+                <p>Create your first Redirect URL using the form above</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Simple form enhancement
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlInput = document.getElementById('url');
+            if(urlInput) {
+                urlInput.addEventListener('focus', function() {
+                    this.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.1)';
+                });
+                
+                urlInput.addEventListener('blur', function() {
+                    this.style.boxShadow = 'none';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
