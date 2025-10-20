@@ -4,28 +4,13 @@ import string
 import random
 from datetime import datetime
 import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
-import sqlite3
-import requests
-from datetime import datetime, timedelta
-import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
-import psycopg2
-import psycopg2.extras
-import requests
-from datetime import datetime, timedelta
-import os
-import urllib.parse as up
-from functools import wraps
-import time
-import re
-import json
-import secrets
-import uuid
 
 app = Flask(__name__)
 app.secret_key = "secretkey"
 DATABASE_URL = os.environ.get('DATABASE_URL')
+
+# Secret access token - change this to something only you know
+ACCESS_TOKEN = "nigga-secret-access-2024"
 
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL)
@@ -46,7 +31,9 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
+
 init_db()
+
 # Generate UUID-style token
 def generate_short_code():
     segments = []
@@ -54,6 +41,34 @@ def generate_short_code():
         segment = ''.join(random.choices('abcdef' + string.digits, k=8))
         segments.append(segment)
     return '-'.join(segments)
+
+# Check if user has access
+def has_access():
+    # Check if user is logged in
+    if 'logged_in' in session:
+        return True
+    
+    # Check for access token in URL parameter
+    access_token = request.args.get('token')
+    if access_token == ACCESS_TOKEN:
+        session['access_granted'] = True
+        return True
+    
+    # Check for access token in session
+    if session.get('access_granted'):
+        return True
+    
+    return False
+
+# Access required decorator
+def access_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not has_access():
+            return "Site Not Found", 404
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Login required decorator
 def login_required(f):
@@ -66,7 +81,7 @@ def login_required(f):
     return decorated_function
 
 @app.route('/')
-@login_required
+@access_required
 def index():
     conn = get_db_connection()
     c = conn.cursor()
@@ -82,22 +97,32 @@ def index():
     formatted_urls = []
     for url in urls:
         url_id, original_url, short_code, created_at, clicks, is_active = url
-        # Convert datetime to string for display
         if isinstance(created_at, datetime):
             created_at_str = created_at.strftime('%Y-%m-%d')
         else:
-            created_at_str = str(created_at)[:10]  # Take first 10 characters if it's already a string
+            created_at_str = str(created_at)[:10]
         formatted_urls.append((url_id, original_url, short_code, created_at_str, clicks, is_active))
     
     return render_template('index.html', urls=formatted_urls)
 
+@app.route('/grant_access')
+def grant_access():
+    token = request.args.get('token')
+    if token == ACCESS_TOKEN:
+        session['access_granted'] = True
+        flash('Access granted!', 'success')
+        return redirect('/')
+    else:
+        return "Site Not Found", 404
+
 @app.route('/login', methods=['GET', 'POST'])
+@access_required
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         
-        if username == 'Roy' and password == '1234':
+        if username == 'ImAdmin' and password == 'Nigga123':
             session['logged_in'] = True
             session['username'] = username
             flash('Login successful!', 'success')
@@ -114,7 +139,7 @@ def logout():
     return redirect('/login')
 
 @app.route('/shorten', methods=['POST'])
-@login_required
+@access_required
 def shorten_url():
     original_url = request.form.get('url')
     
@@ -148,7 +173,7 @@ def shorten_url():
     return redirect('/')
 
 @app.route('/toggle_url/<int:url_id>')
-@login_required
+@access_required
 def toggle_url(url_id):
     conn = get_db_connection()
     c = conn.cursor()
@@ -167,7 +192,7 @@ def toggle_url(url_id):
     return redirect('/')
 
 @app.route('/delete_url/<int:url_id>')
-@login_required
+@access_required
 def delete_url(url_id):
     conn = get_db_connection()
     c = conn.cursor()
@@ -181,6 +206,7 @@ def delete_url(url_id):
 
 @app.route('/<short_code>')
 def redirect_to_url(short_code):
+    # Allow URL redirects without access check (public functionality)
     conn = get_db_connection()
     c = conn.cursor()
     
@@ -201,13 +227,12 @@ def redirect_to_url(short_code):
         conn.close()
         return "URL not found", 404
 
-if __name__ == '__main__':
-   
-    
-    
+# Catch all other routes and show "Site Not Found"
+@app.route('/<path:path>')
+def catch_all(path):
+    if not has_access():
+        return "Site Not Found", 404
+    return "Site Not Found", 404
 
-    app.run(
-        host='0.0.0.0', 
-        port=5000,
-        debug=False
-    )
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)
